@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPA Installer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0b0f;
+    --surface: #12141a;
+    --surface2: #1a1d26;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --accent: #4f8fff;
+    --accent-glow: rgba(79,143,255,0.18);
+    --accent-dim: rgba(79,143,255,0.12);
+    --text: #e8eaf0;
+    --muted: #7a7f94;
+    --success: #3dd68c;
+    --success-bg: rgba(61,214,140,0.1);
+    --danger: #ff5f57;
+    --danger-bg: rgba(255,95,87,0.1);
+    --mono: 'JetBrains Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,143,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,143,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 560px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    margin-bottom: 40px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(79,143,255,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: #fff;
+  }
+
+  h1 span {
+    color: var(--accent);
+  }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .card-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input::placeholder { color: var(--muted); opacity: 0.5; }
+
+  input:focus {
+    border-color: rgba(79,143,255,0.5);
+    background: rgba(79,143,255,0.04);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  .toggle-label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+  }
+
+  .toggle input { opacity: 0; width: 0; height: 0; }
+
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .slider::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--muted);
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .toggle input:checked + .slider { background: var(--accent-dim); border-color: rgba(79,143,255,0.4); }
+  .toggle input:checked + .slider::before { transform: translateX(16px); background: var(--accent); }
+
+  .install-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .install-btn:hover { opacity: 0.9; }
+  .install-btn:active { transform: scale(0.99); }
+
+  .install-btn svg { flex-shrink: 0; }
+
+  .link-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: none;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .link-box.visible { display: flex; }
+
+  .link-text {
+    font-size: 11px;
+    color: var(--muted);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: break-all;
+  }
+
+  .copy-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .copy-btn:hover { border-color: var(--border-hover); }
+
+  .notice {
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 12px;
+    line-height: 1.6;
+    display: flex;
+    gap: 10px;
+  }
+
+  .notice.info { background: var(--accent-dim); border: 1px solid rgba(79,143,255,0.2); color: #a0b8f0; }
+  .notice.warn { background: rgba(255,190,50,0.08); border: 1px solid rgba(255,190,50,0.2); color: #c4a44a; }
+  .notice.ok { background: var(--success-bg); border: 1px solid rgba(61,214,140,0.25); color: #3dd68c; }
+  .notice.err { background: var(--danger-bg); border: 1px solid rgba(255,95,87,0.25); color: var(--danger); }
+  .notice-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  #status { display: none; margin-bottom: 16px; }
+
+  .steps {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 24px;
+  }
+
+  .steps-title {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .step:last-child { border-bottom: none; }
+
+  .step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="container">
+  <header>
+    <div class="badge">iOS OTA Installer</div>
+    <h1>Install <span>IPA</span><br>to Device</h1>
+    <p class="subtitle">Enter your IPA download URL to generate<br>a direct over-the-air install link.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-label">// App Package</div>
+
+    <div class="field">
+      <label>IPA Download URL *</label>
+      <input type="url" id="ipaUrl" placeholder="https://example.com/app.ipa" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>App Name *</label>
+        <input type="text" id="appName" placeholder="My App" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Version</label>
+        <input type="text" id="appVersion" placeholder="1.0.0" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Bundle ID *</label>
+      <input type="text" id="bundleId" placeholder="com.example.myapp" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+
+    <div class="toggle-row">
+      <span class="toggle-label">Open install prompt automatically</span>
+      <label class="toggle">
+        <input type="checkbox" id="autoOpen" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <div class="link-box" id="linkBox">
+    <span class="link-text" id="linkText"></span>
+    <button class="copy-btn" onclick="copyLink()">Copy</button>
+  </div>
+
+  <button class="install-btn" onclick="generate()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v12M8 11l4 4 4-4M3 17v1a3 3 0 003 3h12a3 3 0 003-3v-1"/>
+    </svg>
+    Generate Install Link
+  </button>
+
+  <div class="notice info">
+    <span class="notice-icon">&#9432;</span>
+    <span>Open this page on your <strong>iPhone or iPad</strong>. The IPA must be hosted on <strong>HTTPS</strong> and your device must trust the certificate.</span>
+  </div>
+
+  <div class="steps">
+    <div class="steps-title">// How it works</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>Paste your IPA's direct download URL and fill in the app details</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>Tap "Generate Install Link" — a manifest.plist is created and embedded in an <code>itms-services://</code> URL</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>iOS prompts you to install the app. Confirm and wait for it to appear on your home screen</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div>If prompted, go to <strong>Settings → General → VPN & Device Management</strong> to trust the developer certificate</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let generatedUrl = '';
+
+function showStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="notice ${type}"><span class="notice-icon">${type === 'ok' ? '&#10003;' : type === 'err' ? '&#33;' : '&#9432;'}</span><span>${msg}</span></div>`;
+}
+
+function generate() {
+  const ipaUrl = document.getElementById('ipaUrl').value.trim();
+  const appName = document.getElementById('appName').value.trim() || 'App';
+  const version = document.getElementById('appVersion').value.trim() || '1.0';
+  const bundleId = document.getElementById('bundleId').value.trim() || 'com.example.app';
+  const autoOpen = document.getElementById('autoOpen').checked;
+
+  if (!ipaUrl) {
+    showStatus('Please enter a valid IPA download URL.', 'err');
+    return;
+  }
+
+  if (!ipaUrl.startsWith('https://')) {
+    showStatus('The IPA URL must use <strong>HTTPS</strong>. HTTP is not supported by iOS for OTA installs.', 'err');
+    return;
+  }
+
+  const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>items</key>
+  <array>
+    <dict>
+      <key>assets</key>
+      <array>
+        <dict>
+          <key>kind</key>
+          <string>software-package</string>
+          <key>url</key>
+          <string>${escapeXml(ipaUrl)}</string>
+        </dict>
+      </array>
+      <key>metadata</key>
+      <dict>
+        <key>bundle-identifier</key>
+        <string>${escapeXml(bundleId)}</string>
+        <key>bundle-version</key>
+        <string>${escapeXml(version)}</string>
+        <key>kind</key>
+        <string>software</string>
+        <key>title</key>
+        <string>${escapeXml(appName)}</string>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>`;
+
+  const b64 = btoa(unescape(encodeURIComponent(plist)));
+  const manifestDataUrl = 'data:application/xml;base64,' + b64;
+  generatedUrl = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(manifestDataUrl);
+
+  const linkBox = document.getElementById('linkBox');
+  const linkText = document.getElementById('linkText');
+  linkBox.classList.add('visible');
+  linkText.textContent = generatedUrl.substring(0, 80) + '…';
+
+  showStatus(`Manifest generated for <strong>${appName}</strong>. ${autoOpen ? 'Opening install prompt…' : 'Copy the link to use it on iOS.'}`, 'ok');
+
+  if (autoOpen) {
+    setTimeout(() => { window.location.href = generatedUrl; }, 400);
+  }
+}
+
+function copyLink() {
+  if (!generatedUrl) return;
+  navigator.clipboard.writeText(generatedUrl).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+
+function escapeXml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+
+document.querySelectorAll('input').forEach(el => {
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+});
+</script>
+</body>
+</html>
